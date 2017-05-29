@@ -26,9 +26,9 @@ static const int QT_NO_DIMS = 2;
 
 // Perform t-SNE
 // X -- double matrix of size [N, D]
-// D -- input dimentionality
+// D -- input dimensionality
 // Y -- array to fill with the result of size [N, no_dims]
-// no_dims -- target dimentionality
+// no_dims -- target dimensionality
 void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta, int _num_threads, int max_iter, int random_state) {
 
     if (N - 1 < 3 * perplexity) {
