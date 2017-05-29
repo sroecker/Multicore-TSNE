@@ -13,9 +13,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
-#include <time.h>
 #include <omp.h>
 #include <iostream>
+
+#include <chrono>
 
 #include "quadtree.h"
 #include "vptree.h"
@@ -42,8 +43,8 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     printf("Using no_dims = %d, perplexity = %f, and theta = %f\n", no_dims, perplexity, theta);
 
     // Set learning parameters
-    float total_time = .0;
-    time_t start, end;
+    //float total_time = .0;
+    //time_t start, end;
     int stop_lying_iter = 250, mom_switch_iter = 250;
     double momentum = .5, final_momentum = .8;
     double eta = 200.0;
@@ -59,7 +60,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
 
     // Normalize input data (to prevent numerical problems)
     printf("Computing input similarities...\n");
-    start = time(0);
+    auto start_step1 = std::chrono::high_resolution_clock::now();
     zeroMean(X, N, D);
     double max_X = .0;
     for (int i = 0; i < N * D; i++) {
@@ -85,8 +86,11 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         val_P[i] /= sum_P;
     }
 
-    end = time(0);
-    printf("Done in %4.2f seconds (sparsity = %f)!\nLearning embedding...\n", (float)(end - start) , (double) row_P[N] / ((double) N * (double) N));
+    auto stop_step1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff_step1 = (stop_step1 - start_step1);
+    std::cout << "Done in " << diff_step1.count() << " seconds";
+    std::cout << " (sparsity = " << (double) row_P[N] / ((double) N * (double) N) << ")!" << std::endl;
+    std::cout << "Learning embedding..." << std::endl;
 
     // Step 2
 
@@ -99,13 +103,19 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     if (random_state != -1) {
         srand(random_state);
     }
+    std::cout << "generating random numbers: ";
+    auto rng_start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < N * no_dims; i++) {
         Y[i] = randn() * .0001;
     }
+    auto rng_stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> rng_diff = rng_stop - rng_start;
+    std::cout << rng_diff.count() << "s" << std::endl;
 
     // Perform main training loop
-    start = time(0);
+    auto start = std::chrono::high_resolution_clock::now();
     for (int iter = 0; iter < max_iter; iter++) {
+        auto start = std::chrono::high_resolution_clock::now();
 
         // Compute approximate gradient
         computeGradient(row_P, col_P, val_P, Y, N, no_dims, dY, theta);
@@ -138,21 +148,22 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
 
         // Print out progress
         if ((iter > 0 && iter % 50 == 0) || (iter == max_iter - 1)) {
-            end = time(0);
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = (end - start);
             double C = .0;
 
             C = evaluateError(row_P, col_P, val_P, Y, N, theta);  // doing approximate computation here!
 
             if (iter == 0)
-                printf("Iteration %d: error is %f\n", iter + 1, C);
+                std::cout << "Iteration " << iter+1 << ": error is " << C << std::endl;
             else {
-                total_time += (float) (end - start);
-                printf("Iteration %d: error is %f (50 iterations in %4.2f seconds)\n", iter, C, (float) (end - start) );
+                std::cout << "Iteration " << iter << ": error is " << C << " (50 iterations in " << diff.count() << " seconds)" << std::endl;
             }
-            start = time(0);
+            start = std::chrono::high_resolution_clock::now();
         }
     }
-    end = time(0); total_time += (float) (end - start) ;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> total_time = (end - start);
 
     // Clean up memory
     free(dY);
@@ -163,7 +174,7 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     free(col_P); col_P = NULL;
     free(val_P); val_P = NULL;
 
-    printf("Fitting performed in %4.2f seconds.\n", total_time);
+    std::cout << "Fitting performed in " << total_time.count() << " seconds." << std::endl;
 }
 
 
