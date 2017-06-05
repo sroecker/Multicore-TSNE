@@ -17,6 +17,7 @@
 #include <iostream>
 
 #include <chrono>
+#include <random>
 
 #include "quadtree.h"
 #include "vptree.h"
@@ -95,18 +96,21 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     // Step 2
 
     // Lie about the P-values
+    /*
     for (int i = 0; i < row_P[N]; i++) {
         val_P[i] *= 12.0;
     }
+    */
 
     // Initialize solution (randomly)
-    if (random_state != -1) {
-        srand(random_state);
-    }
     std::cout << "generating random numbers: ";
     auto rng_start = std::chrono::high_resolution_clock::now();
+    std::default_random_engine r(random_state);
+    std::normal_distribution<double> gauss(0.0, 2.0);
+  
     for (int i = 0; i < N * no_dims; i++) {
-        Y[i] = randn() * .0001;
+        //Y[i] = randn() * .0001;
+        Y[i] = gauss(r) * .0001;
     }
     auto rng_stop = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> rng_diff = rng_stop - rng_start;
@@ -137,11 +141,14 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         zeroMean(Y, N, no_dims);
 
         // Stop lying about the P-values after a while, and switch momentum
+        /*
         if (iter == stop_lying_iter) {
             for (int i = 0; i < row_P[N]; i++) {
                 val_P[i] /= 12.0;
             }
         }
+        */
+
         if (iter == mom_switch_iter) {
             momentum = final_momentum;
         }
@@ -480,20 +487,6 @@ void TSNE::zeroMean(double* X, int N, int D) {
     free(mean); mean = NULL;
 }
 
-
-// Generates a Gaussian random number
-double TSNE::randn() {
-    double x, y, radius;
-    do {
-        x = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
-        y = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
-        radius = (x * x) + (y * y);
-    } while ((radius >= 1.0) || (radius == 0.0));
-    radius = sqrt(-2 * log(radius) / radius);
-    x *= radius;
-    y *= radius;
-    return x;
-}
 
 extern "C"
 {
