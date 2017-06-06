@@ -118,9 +118,11 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     std::cout << rng_diff.count() << "s" << std::endl;
 
     // Perform main training loop
+    auto start_gradient = std::chrono::high_resolution_clock::now();
     auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Gradient descent..." << std::endl;
     for (int iter = 0; iter < max_iter; iter++) {
-        auto start = std::chrono::high_resolution_clock::now();
 
         // Compute approximate gradient
         computeGradient(row_P, col_P, val_P, Y, N, no_dims, dY, theta);
@@ -155,23 +157,24 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         }
 
         // Print out progress
-        if ((iter > 0 && iter % 50 == 0) || (iter == max_iter - 1)) {
-            auto end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> diff = (end - start);
+        if ((iter == 0) || (iter > 0 && iter % 50 == 0) || (iter == max_iter - 1)) {
             double C = .0;
 
             C = evaluateError(row_P, col_P, val_P, Y, N, theta);  // doing approximate computation here!
+            end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = (end - start);
 
-            if (iter == 0)
+            if (iter == 0) {
                 std::cout << "Iteration " << iter+1 << ": error is " << C << std::endl;
+            }
             else {
                 std::cout << "Iteration " << iter << ": error is " << C << " (50 iterations in " << diff.count() << " seconds)" << std::endl;
             }
-            start = std::chrono::high_resolution_clock::now();
+        start = std::chrono::high_resolution_clock::now();
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> total_time = (end - start);
+    auto end_gradient = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> total_time = (end_gradient - start_gradient);
 
     // Clean up memory
     free(dY);
