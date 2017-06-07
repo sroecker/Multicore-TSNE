@@ -297,6 +297,8 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, int** _row_P, int*
     std::cout << "Building tree..." << std::endl;
 
     int steps_completed = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     #pragma omp parallel for
     for (int n = 0; n < N; n++)
     {
@@ -376,7 +378,10 @@ void TSNE::computeGaussianPerplexity(double* X, int N, int D, int** _row_P, int*
         if (steps_completed % 10000 == 0)
         {
             #pragma omp critical
-          std::cout << " - point " << steps_completed << " of " << N << std::endl;
+            end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff_step = (end - start);
+            std::cout << " - point " << steps_completed << " of " << N << " in " << diff_step.count() << "s" << std::endl;
+            start = std::chrono::high_resolution_clock::now();
         }
     }
 
